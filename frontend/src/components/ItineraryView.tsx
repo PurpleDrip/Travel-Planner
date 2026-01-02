@@ -4,10 +4,12 @@ import Navbar from './Navbar';
 import api from '../services/api';
 import MapComponent from './MapComponent';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Download, Calendar, MapPin, Loader2, ArrowLeft, Sparkles, Clock } from 'lucide-react';
 import { Itinerary, Day } from '../types';
 import { motion } from 'framer-motion';
-import 'jspdf-autotable';
+import { AxiosError } from 'axios';
+import 'leaflet/dist/leaflet.css';
 
 // Extend jsPDF type for autoTable
 declare module 'jspdf' {
@@ -25,11 +27,16 @@ const ItineraryView: React.FC = () => {
 
     useEffect(() => {
         const fetchItinerary = async () => {
+            console.log('Fetching itinerary with ID:', id);
             try {
                 const res = await api.get<Itinerary>(`/itineraries/${id}`);
+                console.log('Itinerary data received:', res.data);
                 setItinerary(res.data);
             } catch (err) {
                 console.error("Failed to fetch itinerary", err);
+                if (err instanceof AxiosError) {
+                    console.error("Error details:", err.response?.data);
+                }
             } finally {
                 setLoading(false);
             }
@@ -38,88 +45,121 @@ const ItineraryView: React.FC = () => {
     }, [id]);
 
     const handleDownloadPDF = () => {
-        if (!itinerary || !itinerary.generatedPlan) return;
+        console.log('PDF Export button clicked');
 
-        const doc = new jsPDF();
-
-        // Title
-        doc.setFontSize(22);
-        doc.setTextColor(79, 70, 229); // Indigo
-        doc.text(itinerary.generatedPlan.title || `Trip to ${itinerary.destination}`, 14, 20);
-
-        // Metadata
-        doc.setFontSize(11);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Destination: ${itinerary.destination}`, 14, 32);
-        doc.text(`Dates: ${formatDate(itinerary.startDate)} - ${formatDate(itinerary.endDate)}`, 14, 38);
-
-        if (itinerary.preferences) {
-            doc.text(`Preferences: ${itinerary.preferences}`, 14, 44);
+        if (!itinerary) {
+            console.error('No itinerary data available');
+            alert('No itinerary data available to export');
+            return;
         }
 
-        let yPos = itinerary.preferences ? 55 : 48;
+        if (!itinerary.generatedPlan) {
+            console.error('No generated plan available');
+            alert('No generated plan available to export');
+            return;
+        }
 
-        itinerary.generatedPlan.days.forEach((day) => {
-            if (yPos > 260) {
-                doc.addPage();
-                yPos = 20;
+        try {
+            console.log('Starting PDF generation...', itinerary);
+            const doc = new jsPDF();
+
+            // Title
+            doc.setFontSize(22);
+            doc.setTextColor(79, 70, 229); // Indigo
+            const title = itinerary.generatedPlan.title || `Trip to ${itinerary.destination}`;
+            doc.text(title, 14, 20);
+            console.log('Added title:', title);
+
+            // Metadata
+            doc.setFontSize(11);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Destination: ${itinerary.destination}`, 14, 32);
+            doc.text(`Dates: ${formatDate(itinerary.startDate)} - ${formatDate(itinerary.endDate)}`, 14, 38);
+
+            if (itinerary.preferences) {
+                doc.text(`Preferences: ${itinerary.preferences}`, 14, 44);
             }
 
-            // Day header
-            doc.setFontSize(14);
-            doc.setTextColor(59, 130, 246); // Blue
-            doc.text(`Day ${day.day}: ${day.date || ''}`, 14, yPos);
-            yPos += 8;
+            let yPos = itinerary.preferences ? 55 : 48;
 
-            // Activities table
-            const tableData = day.activities.map(act => [
-                act.time,
-                act.activity,
-                act.description,
-                act.location?.name || ''
-            ]);
+            // Process each day
+            console.log('Processing days:', itinerary.generatedPlan.days.length);
+            itinerary.generatedPlan.days.forEach((day, index) => {
+                console.log(`Processing day ${index + 1}:`, day);
 
-            doc.autoTable({
-                startY: yPos,
-                head: [['Time', 'Activity', 'Description', 'Location']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [99, 102, 241], // Indigo
-                    textColor: 255,
-                    fontStyle: 'bold'
-                },
-                margin: { left: 14, right: 14 },
-                styles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                columnStyles: {
-                    0: { cellWidth: 25 },
-                    1: { cellWidth: 40 },
-                    2: { cellWidth: 70 },
-                    3: { cellWidth: 45 }
+                if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
                 }
+
+                // Day header
+                doc.setFontSize(14);
+                doc.setTextColor(59, 130, 246); // Blue
+                doc.text(`Day ${day.day}: ${day.date || ''}`, 14, yPos);
+                yPos += 8;
+
+                // Activities table
+                const tableData = day.activities.map(act => [
+                    act.time || 'N/A',
+                    act.activity || 'N/A',
+                    act.description || 'N/A',
+                    act.location?.name || 'N/A'
+                ]);
+
+                console.log(`Day ${day.day} table data:`, tableData);
+
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Time', 'Activity', 'Description', 'Location']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: {
+                        fillColor: [99, 102, 241], // Indigo
+                        textColor: 255,
+                        fontStyle: 'bold'
+                    },
+                    margin: { left: 14, right: 14 },
+                    styles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 25 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 70 },
+                        3: { cellWidth: 45 }
+                    }
+                });
+
+                yPos = (doc as any).lastAutoTable.finalY + 12;
             });
 
-            yPos = doc.lastAutoTable.finalY + 12;
-        });
+            // Footer
+            const pageCount = doc.getNumberOfPages();
+            console.log('Adding footer to', pageCount, 'pages');
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Generated by Travel Planner AI - Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                );
+            }
 
-        // Footer
-        const pageCount = doc.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text(
-                `Generated by Travel Planner AI - Page ${i} of ${pageCount}`,
-                doc.internal.pageSize.getWidth() / 2,
-                doc.internal.pageSize.getHeight() - 10,
-                { align: 'center' }
-            );
+            const filename = `${itinerary.destination.replace(/[^a-z0-9]/gi, '_')}_Itinerary.pdf`;
+            console.log('Saving PDF as:', filename);
+            doc.save(filename);
+            console.log('PDF saved successfully!');
+
+            // Show success message
+            alert('PDF downloaded successfully!');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-
-        doc.save(`${itinerary.destination}_Itinerary.pdf`);
     };
 
     const formatDate = (dateStr: string) => {

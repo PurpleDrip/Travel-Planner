@@ -11,7 +11,7 @@ export const generateItinerary = async (
   preferences?: string
 ): Promise<IGeneratedPlan> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     const start = new Date(startDate);
     const end = new Date(endDate);

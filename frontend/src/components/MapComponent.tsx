@@ -75,6 +75,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities }) => {
 
     return (
         <MapContainer
+            key={`map-${positions.length}`}
             center={center}
             zoom={13}
             scrollWheelZoom={false}
