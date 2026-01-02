@@ -205,29 +205,29 @@ const ItineraryView: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col">
             <Navbar />
 
-            <div className="flex-1 container mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
-
-                {/* Left Panel: Itinerary Details */}
-                <div className="lg:w-1/2 flex flex-col overflow-y-auto pb-10">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 mb-6 border border-gray-100"
+            <div className="flex-1 container mx-auto px-6 py-8">
+                {/* Header Section with Map */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 mb-8 border border-gray-100"
+                >
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition mb-6 font-medium"
                     >
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition mb-6 font-medium"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Back to Dashboard
-                        </button>
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Dashboard
+                    </button>
 
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left: Title and Info */}
+                        <div className="flex flex-col justify-between">
+                            <div>
                                 <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
                                     {itinerary.generatedPlan.title}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                                <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-4">
                                     <div className="flex items-center gap-2 bg-indigo-50 px-3 py-2 rounded-lg">
                                         <MapPin className="w-4 h-4 text-indigo-600" />
                                         <span className="font-medium">{itinerary.destination}</span>
@@ -238,7 +238,7 @@ const ItineraryView: React.FC = () => {
                                     </div>
                                 </div>
                                 {itinerary.preferences && (
-                                    <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Sparkles className="w-4 h-4 text-purple-600" />
                                             <span className="text-sm font-semibold text-purple-900">Your Preferences</span>
@@ -247,72 +247,70 @@ const ItineraryView: React.FC = () => {
                                     </div>
                                 )}
                             </div>
+
+                            <button
+                                onClick={handleDownloadPDF}
+                                className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all transform hover:-translate-y-0.5 font-bold"
+                            >
+                                <Download className="w-5 h-5" />
+                                Export as PDF
+                            </button>
                         </div>
 
-                        <button
-                            onClick={handleDownloadPDF}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all transform hover:-translate-y-0.5 font-bold"
+                        {/* Right: Compact Map */}
+                        <div className="h-[400px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                            <MapComponent activities={days} />
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Itinerary Days - Full Width */}
+                <div className="space-y-6">
+                    {days.map((day: Day, dayIndex: number) => (
+                        <motion.div
+                            key={day.day}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: dayIndex * 0.1 }}
+                            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
                         >
-                            <Download className="w-5 h-5" />
-                            Export as PDF
-                        </button>
-                    </motion.div>
+                            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
+                                <h3 className="font-bold text-white text-lg">
+                                    Day {day.day}
+                                    <span className="text-indigo-100 font-normal text-sm ml-3">{day.date}</span>
+                                </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                                {day.activities.map((act, idx) => (
+                                    <div key={idx} className="flex gap-4 relative group">
+                                        {/* Timeline line */}
+                                        {idx !== day.activities.length - 1 && (
+                                            <div className="absolute left-[3.25rem] top-10 bottom-[-1.5rem] w-0.5 bg-gradient-to-b from-indigo-200 to-purple-200" />
+                                        )}
 
-                    {/* Days */}
-                    <div className="space-y-6">
-                        {days.map((day: Day, dayIndex: number) => (
-                            <motion.div
-                                key={day.day}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: dayIndex * 0.1 }}
-                                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-                            >
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
-                                    <h3 className="font-bold text-white text-lg">
-                                        Day {day.day}
-                                        <span className="text-indigo-100 font-normal text-sm ml-3">{day.date}</span>
-                                    </h3>
-                                </div>
-                                <div className="p-6 space-y-6">
-                                    {day.activities.map((act, idx) => (
-                                        <div key={idx} className="flex gap-4 relative group">
-                                            {/* Timeline line */}
-                                            {idx !== day.activities.length - 1 && (
-                                                <div className="absolute left-[3.25rem] top-10 bottom-[-1.5rem] w-0.5 bg-gradient-to-b from-indigo-200 to-purple-200" />
-                                            )}
-
-                                            <div className="min-w-[5rem] text-sm font-bold text-indigo-600 flex flex-col items-center">
-                                                <div className="p-2 bg-indigo-50 rounded-lg border-2 border-indigo-200 group-hover:border-indigo-400 transition">
-                                                    <Clock className="w-4 h-4" />
-                                                </div>
-                                                <span className="mt-2">{act.time}</span>
+                                        <div className="min-w-[5rem] text-sm font-bold text-indigo-600 flex flex-col items-center">
+                                            <div className="p-2 bg-indigo-50 rounded-lg border-2 border-indigo-200 group-hover:border-indigo-400 transition">
+                                                <Clock className="w-4 h-4" />
                                             </div>
-
-                                            <div className="flex-1 pb-2">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <h4 className="font-bold text-gray-900 text-lg">{act.activity}</h4>
-                                                    {act.location?.name && (
-                                                        <span className="text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-semibold whitespace-nowrap ml-2">
-                                                            {act.location.name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-gray-600 leading-relaxed">{act.description}</p>
-                                            </div>
+                                            <span className="mt-2">{act.time}</span>
                                         </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
 
-                {/* Right Panel: Map */}
-                <div className="lg:w-1/2 h-[500px] lg:h-auto lg:sticky lg:top-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="h-full">
-                        <MapComponent activities={days} />
-                    </div>
+                                        <div className="flex-1 pb-2">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <h4 className="font-bold text-gray-900 text-lg">{act.activity}</h4>
+                                                {act.location?.name && (
+                                                    <span className="text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-semibold whitespace-nowrap ml-2">
+                                                        {act.location.name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed">{act.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
         </div>
